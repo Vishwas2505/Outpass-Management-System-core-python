@@ -1,21 +1,21 @@
 import streamlit as st
-from dotenv import load_dotenv
-import os
 from datetime import datetime
+import pandas as pd
 from supabase_client import supabase
 
-# Load environment variables
-load_dotenv()
-
-# Streamlit page config
+# -------------------- Streamlit Page Config --------------------
 st.set_page_config(page_title="Outpass Management System", layout="wide")
-
 st.title("🏫 Outpass Management System")
+st.markdown("<hr>", unsafe_allow_html=True)
+
+# -------------------- Session State --------------------
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+    st.session_state.role = None
+    st.session_state.user_id = None
 
 # -------------------- Helper Functions --------------------
-
 def register_user(name, email, phone, department, role, password):
-    """Insert new user into users table"""
     res = supabase.table("users").insert({
         "name": name,
         "email": email,
@@ -26,76 +26,50 @@ def register_user(name, email, phone, department, role, password):
     }).execute()
     return res
 
-
 def register_student(name, email, phone, department, password, roll_no):
-    """Insert student and related user record"""
     user_res = register_user(name, email, phone, department, "student", password)
-
     if not user_res.data:
         return {"error": "Failed to create user"}
-
     user_id = user_res.data[0].get("user_id")
-
-    # Fallback: fetch by email if Supabase doesn’t return ID
     if not user_id:
         existing = supabase.table("users").select("user_id").eq("email", email).execute()
-        if existing.data:
-            user_id = existing.data[0].get("user_id")
-
-    if not user_id:
-        return {"error": "User ID not found after insert"}
-
+        user_id = existing.data[0].get("user_id")
     student_res = supabase.table("students").insert({
         "user_id": user_id,
         "roll_no": roll_no
     }).execute()
-
     return {"user": user_res.data[0], "student": student_res.data[0]}
-
 
 def register_warden(name, email, phone, department, password, employee_id):
     user_res = register_user(name, email, phone, department, "warden", password)
     if not user_res.data:
         return {"error": "Failed to create user"}
-
     user_id = user_res.data[0].get("user_id")
-    if not user_id:
-        existing = supabase.table("users").select("user_id").eq("email", email).execute()
-        if existing.data:
-            user_id = existing.data[0].get("user_id")
-
     warden_res = supabase.table("wardens").insert({
         "user_id": user_id,
         "employee_id": employee_id
     }).execute()
     return {"user": user_res.data[0], "warden": warden_res.data[0]}
 
-
 def register_admin(name, email, phone, department, password):
     user_res = register_user(name, email, phone, department, "admin", password)
     if not user_res.data:
         return {"error": "Failed to create user"}
-
     user_id = user_res.data[0].get("user_id")
     admin_res = supabase.table("admins").insert({"user_id": user_id}).execute()
     return {"user": user_res.data[0], "admin": admin_res.data[0]}
 
-
-# ------------- Utility Functions -------------
 def student_exists(student_id):
     r = supabase.table("students").select("*").eq("student_id", student_id).execute()
     return bool(r.data)
-
 
 def warden_exists(warden_id):
     r = supabase.table("wardens").select("*").eq("warden_id", warden_id).execute()
     return bool(r.data)
 
-
 def admin_exists(admin_id):
     r = supabase.table("admins").select("*").eq("admin_id", admin_id).execute()
     return bool(r.data)
-
 
 def apply_outpass(student_id, warden_id, reason, from_date, to_date):
     r = supabase.table("outpasses").insert({
@@ -113,11 +87,9 @@ def apply_outpass(student_id, warden_id, reason, from_date, to_date):
         }).execute()
     return r
 
-
 def get_student_outpasses(student_id):
     r = supabase.table("outpasses").select("*").eq("student_id", student_id).order("outpass_id", desc=True).execute()
     return r.data if r.data else []
-
 
 def get_notifications_for_student(student_id):
     outs = supabase.table("outpasses").select("outpass_id").eq("student_id", student_id).execute()
@@ -127,11 +99,9 @@ def get_notifications_for_student(student_id):
     n = supabase.table("notifications").select("*").in_("outpass_id", ids).order("notification_id", desc=True).execute()
     return n.data if n.data else []
 
-
 def get_pending_for_warden(warden_id):
     r = supabase.table("outpasses").select("*").eq("warden_id", warden_id).eq("status", "pending").execute()
     return r.data if r.data else []
-
 
 def update_outpass_status(outpass_id, status):
     r = supabase.table("outpasses").update({"status": status}).eq("outpass_id", outpass_id).execute()
@@ -141,7 +111,6 @@ def update_outpass_status(outpass_id, status):
             "message": f"Outpass {status}"
         }).execute()
     return r
-
 
 def get_all_outpasses_with_details():
     outpasses_res = supabase.table("outpasses").select("*").order("outpass_id", desc=True).execute()
@@ -155,7 +124,6 @@ def get_all_outpasses_with_details():
             user = supabase.table("users").select("*").eq("user_id", user_id).execute().data
             if user:
                 student_user = user[0]
-
         warden_user = {}
         if op.get("warden_id"):
             w = supabase.table("wardens").select("*").eq("warden_id", op["warden_id"]).execute().data
@@ -163,33 +131,26 @@ def get_all_outpasses_with_details():
                 w_user = supabase.table("users").select("*").eq("user_id", w[0]["user_id"]).execute().data
                 if w_user:
                     warden_user = w_user[0]
-
         rows.append({
-            "outpass_id": op["outpass_id"],
-            "student_name": student_user.get("name", ""),
-            "warden_name": warden_user.get("name", ""),
-            "reason": op.get("reason"),
-            "from_date": op.get("from_date"),
-            "to_date": op.get("to_date"),
-            "status": op.get("status")
+            "Outpass ID": op["outpass_id"],
+            "Student": student_user.get("name", ""),
+            "Warden": warden_user.get("name", ""),
+            "Reason": op.get("reason"),
+            "From Date": op.get("from_date"),
+            "To Date": op.get("to_date"),
+            "Status": op.get("status")
         })
     return rows
 
-
-# -------------------- UI Section --------------------
-
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-    st.session_state.role = None
-    st.session_state.user_id = None
-
+# -------------------- Sidebar Menu --------------------
 menu = st.sidebar.selectbox("Menu", ["Home", "Register", "Login", "Logout"])
 
 if menu == "Home":
-    st.write("Welcome to the Outpass Management System. Use the sidebar to Register or Login.")
+    st.markdown("### Welcome! Use the sidebar to Register or Login")
+    st.info("Manage students, wardens, outpasses, and reports easily!")
 
 elif menu == "Register":
-    st.header("User Registration")
+    st.header("🎯 User Registration")
     role = st.selectbox("Role", ["student", "warden", "admin"])
     with st.form("reg_form"):
         name = st.text_input("Name")
@@ -221,7 +182,7 @@ elif menu == "Register":
                     st.error(str(res))
 
 elif menu == "Login":
-    st.header("Login")
+    st.header("🔐 Login")
     role = st.selectbox("Login as", ["student", "warden", "admin"])
     user_id = st.number_input("Enter ID", min_value=1, step=1)
     if st.button("Login"):
@@ -232,20 +193,24 @@ elif menu == "Login":
             st.session_state.logged_in = True
             st.session_state.role = role
             st.session_state.user_id = user_id
-            st.success(f"Logged in as {role} #{user_id}")
+            st.success(f"Logged in as {role.title()} #{user_id}")
         else:
             st.error(f"{role.title()} not found. Please register first.")
 
-# -------------------- DASHBOARDS --------------------
+elif menu == "Logout":
+    st.session_state.logged_in = False
+    st.session_state.role = None
+    st.session_state.user_id = None
+    st.success("You have been logged out.")
 
+# -------------------- Dashboards --------------------
 if st.session_state.logged_in:
-
     role = st.session_state.role
     user_id = st.session_state.user_id
 
     if role == "student":
-        st.subheader(f"Student Dashboard (ID: {user_id})")
-        action = st.selectbox("Action", ["Apply Outpass", "View My Outpasses", "View Notifications"])
+        st.subheader(f"🎓 Student Dashboard (ID: {user_id})")
+        action = st.selectbox("Choose Action", ["Apply Outpass", "View My Outpasses", "View Notifications"])
         if action == "Apply Outpass":
             with st.form("apply_form"):
                 warden_id = st.number_input("Warden ID", min_value=1, step=1)
@@ -259,34 +224,36 @@ if st.session_state.logged_in:
                     else:
                         res = apply_outpass(user_id, warden_id, reason, str(from_date), str(to_date))
                         if res.data:
-                            st.success("Outpass Applied Successfully!")
+                            st.success("✅ Outpass Applied Successfully!")
                         else:
-                            st.error("Failed to apply")
+                            st.error("❌ Failed to apply outpass")
         elif action == "View My Outpasses":
             data = get_student_outpasses(user_id)
-            st.table(data)
+            st.dataframe(data)
         elif action == "View Notifications":
             notes = get_notifications_for_student(user_id)
-            st.table(notes)
+            st.dataframe(notes)
 
     elif role == "warden":
-        st.subheader(f"Warden Dashboard (ID: {user_id})")
+        st.subheader(f"🛡️ Warden Dashboard (ID: {user_id})")
         pendings = get_pending_for_warden(user_id)
         if not pendings:
             st.info("No pending outpasses.")
         else:
             for op in pendings:
-                st.write(f"Outpass #{op['outpass_id']} | Student #{op['student_id']} | {op['reason']}")
+                st.markdown(f"**Outpass #{op['outpass_id']} | Student #{op['student_id']} | Reason:** {op['reason']}")
                 col1, col2 = st.columns(2)
                 if col1.button(f"Approve {op['outpass_id']}", key=f"appr-{op['outpass_id']}"):
                     update_outpass_status(op['outpass_id'], "approved")
-                    st.success("Approved")
+                    st.success("Approved ✅")
+                    st.experimental_rerun()
                 if col2.button(f"Reject {op['outpass_id']}", key=f"rej-{op['outpass_id']}"):
                     update_outpass_status(op['outpass_id'], "rejected")
-                    st.error("Rejected")
+                    st.error("Rejected ❌")
+                    st.experimental_rerun()
 
     elif role == "admin":
-        st.subheader(f"Admin Dashboard (ID: {user_id})")
+        st.subheader(f"🧑‍💼 Admin Dashboard (ID: {user_id})")
         action = st.selectbox("Action", ["Add Student", "Generate Report"])
         if action == "Add Student":
             with st.form("add_student_form"):
@@ -304,12 +271,5 @@ if st.session_state.logged_in:
                     else:
                         st.error("Failed to add student")
         elif action == "Generate Report":
-            import pandas as pd
             df = pd.DataFrame(get_all_outpasses_with_details())
-            st.dataframe(df)
-
-elif menu == "Logout":
-    st.session_state.logged_in = False
-    st.session_state.role = None
-    st.session_state.user_id = None
-    st.success("You have been logged out.")
+            st.dataframe(df, use_container_width=True)
