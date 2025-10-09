@@ -1,6 +1,6 @@
-streamlit
-supabase
-python-dotenv
+streamlit==1.23.1
+supabase==1.0.0
+python-dotenv==1.0.0
 pandas
 pyarrow
 requests
