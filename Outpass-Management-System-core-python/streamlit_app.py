@@ -1,11 +1,11 @@
 import streamlit as st
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import os
 from datetime import datetime
 from supabase_client import supabase
 
 # Load environment variables
-load_dotenv()
+# load_dotenv()
 
 # Streamlit page config
 st.set_page_config(page_title="Outpass Management System", layout="wide")
@@ -312,4 +312,5 @@ elif menu == "Logout":
     st.session_state.logged_in = False
     st.session_state.role = None
     st.session_state.user_id = None
+
     st.success("You have been logged out.")
