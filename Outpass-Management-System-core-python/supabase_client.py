@@ -12,10 +12,3 @@ except KeyError:
 
 # Create Supabase client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# Optional: Test connection (comment out in production)
-try:
-    version = supabase.rpc("version").execute()  # optional test RPC
-    st.write("Supabase client initialized successfully!")
-except Exception as e:
-    st.error(f"Error initializing Supabase client: {e}")
