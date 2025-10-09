@@ -1,7 +1,7 @@
-streamlit==1.23.1
-supabase==1.0.1
-pandas==1.1.5
-pyarrow==12.0.1
-python-dotenv==1.0.0
-httpx==0.24.1
-numpy==1.24.4
+streamlit
+supabase
+python-dotenv
+pandas
+pyarrow
+requests
+numpy
