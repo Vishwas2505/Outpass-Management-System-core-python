@@ -1,14 +1,17 @@
 # supabase_client.py
-import streamlit as st
-from supabase import create_client, Client
 import os
+from supabase import create_client, Client
+from dotenv import load_dotenv
 
-# Use Streamlit secrets
-SUPABASE_URL = st.secrets["SUPABASE_URL"]
-SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+# Load environment variables (local development)
+load_dotenv()
 
-try:
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    st.write("Supabase client initialized!")
-except Exception as e:
-    st.error(f"Error initializing Supabase client: {e}")
+# Fetch Supabase URL and KEY from environment
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise ValueError("Supabase URL or KEY is missing in environment variables")
+
+# Initialize Supabase client
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
