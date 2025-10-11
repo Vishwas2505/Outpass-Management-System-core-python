@@ -1,0 +1,20 @@
+# Core Streamlit
+streamlit==1.27.0
+
+# Supabase client
+supabase==2.3.8
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Data handling
+pandas==2.0.3
+
+# Image processing
+Pillow==9.4.0
+
+# Logging / rich display (Streamlit dependency)
+rich==13.4.2
+markdown-it-py==3.0.0
+mdurl==0.1.2
+pygments==2.15.1
