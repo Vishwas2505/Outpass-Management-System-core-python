@@ -1,0 +1,17 @@
+# Streamlit core
+streamlit==1.27.0
+
+# Supabase Python client
+supabase==2.3.8
+
+# Environment variable management
+python-dotenv==1.0.0
+
+# Pandas (Python 3.13 compatible prebuilt wheel)
+pandas==2.0.3
+
+# Pillow (Python 3.13 compatible prebuilt wheel)
+pillow==9.4.0
+
+# Additional utilities
+rich==14.2.0
