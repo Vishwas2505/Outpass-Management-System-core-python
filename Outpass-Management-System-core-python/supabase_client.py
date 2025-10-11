@@ -1,5 +1,5 @@
 import os
-from supabase_client import create_client
+from supabase import create_client
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -14,3 +14,4 @@ if not SUPABASE_URL or not SUPABASE_KEY:
     raise ValueError("Supabase credentials missing in .env file!")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
