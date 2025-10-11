@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit_app as st
 from datetime import datetime
 import pandas as pd
 from supabase_client import supabase
@@ -273,3 +273,4 @@ if st.session_state.logged_in:
         elif action == "Generate Report":
             df = pd.DataFrame(get_all_outpasses_with_details())
             st.dataframe(df, use_container_width=True)
+
